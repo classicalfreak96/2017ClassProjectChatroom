@@ -1,0 +1,59 @@
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+
+/*.title{
+    margin-left: 20px;
+    width: 200px;
+}
+*/
+.ui-dialog .ui-dialog-content {
+    background:  repeat scroll 0 0 white;
+    border: 0 none;
+    overflow: auto;
+    position: relative;
+    padding: 0 !important;
+}
+
+.ui-widget-header {
+  /*Change the Header color here*/
+    background: black;
+    border: 0;
+    color: #fff;
+    text-align: center;
+    font-weight: normal;
+}
+.ui-widget-content{
+    border: 2px solid black;
+}
+
+.enterMessage{
+    margin-top:380px;
+    margin-left: 10px;
+}
+
+.message{
+    width:93%;
+    height: 40px;
+}
+
+.ui-dialog-titlebar-close{
+    position: absolute;
+    right: 3px;
+}
+
+.ui-dialog .ui-dialog-titlebar {
+    padding: 0.1em .5em;
+    position: relative;
+    font-size: 1em;
+}
+
+.ui-dialog {
+    left: 0;
+    outline: 0 none;
+    padding: 0 !important;
+    position: absolute;
+    top: 0;
+
+}

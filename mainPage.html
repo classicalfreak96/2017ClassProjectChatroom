@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head><title>Front Page</title>
+	<link rel="stylesheet" type="text/css" href="chatroom.css"/>
+    <script src="/socket.io/socket.io.js"></script>
+	<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+	<script src="http://code.jquery.com/ui/1.11.1/jquery-ui.min.js"></script>	
+    <script type ="text/javascript"> 
+	var socketio = io.connect();
+    socketio.on("message_to_client",function(data) {
+         //Append an HR thematic break and the escaped HTML of the new message
+         document.getElementById("chatlog").appendChild(document.createElement("hr"));
+         document.getElementById("chatlog").appendChild(document.createTextNode(data["message"]));
+      });
+	function addChat(){
+		var chatName = document.getElementById("roomName").value;
+		var node = document.createElement("tr");
+		var node2 = document.createElement("td");
+		node.setAttribute("class", chatName);
+		node2.textContent = chatName;
+		node.addEventListener("dblclick", function(){
+					$("#divdeps").dialog({
+					autoOpen: false,
+					show: false,
+					resizable: true,
+					position: 'center',
+					stack: true,
+					height: 500,
+					width: 500,
+					title: chatName,
+					modal: false
+				});
+					$("#divdeps").dialog('open');
+					
+				}, false);
+		node.appendChild(node2);
+		document.getElementById("allChats").appendChild(node);
+	}
+	function loginAjax(){															//logs in user
+		var username = document.getElementById("username").value;						//declare variables
+		//var password = document.getElementById("password").value; 
+		document.getElementById("username").value = "";									//empties fields once login is pressed
+		//document.getElementById("password").value = "";
+		document.getElementById("logoutForm").style.visibility = "visible";				//once logged in, logout form becomes visible
+	
+		var dataString = "username=" + encodeURIComponent(username);	//pass datastring into server 
+		
+		var xmlHttp = new XMLHttpRequest(); 
+		xmlHttp.open("POST", "login_ajax.php", true); 
+		xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded"); 
+		xmlHttp.addEventListener("load", function(){
+			document.getElementById("createRoomForm").style.visibility = "visible";
+			document.getElementById("loginForm").style.visibility = "hidden";		
+		}, false); 
+		xmlHttp.send(dataString); 														//execute
+	}
+	
+	function sendMessage(){
+		var msg = document.getElementById("message").value;
+        socketio.emit("message_to_server", {message:msg});
+	}
+	</script>
+	</head>
+<body> 
+<!-- 	returning user login -->
+	<div id = "loginForm">
+		<p>
+			<input type="text" id="username" placeholder="Username" />
+<!--			<input type="password" id="password" placeholder="Password" -->
+			<button type = "submit" value = "login" id="login_btn" onclick = "loginAjax();">Log In</button>
+		</p>
+	<div id = "logoutForm" style = "visibility: hidden">
+		<p>
+			<button id="logout_btn" onclick = "logout(event);" visibility = "hidden">Log Out</button>
+			<button id="delete_btn" onclick = "deleteAccount(event);">Delete Account</button>
+		</p>
+	</div>
+	<div id = "createRoomForm" style = "visibility: hidden"> 
+	Create a chat room:
+	Enter chatroom name: <input type = "text" class = "chatName" id = "roomName"/>
+	<button type = "submit" value = "addChat" id = "addChat" onclick = "addChat();"> Create Chat Room</button>
+	</div>
+	
+	<table id = "allChats" style = "visibility: visible">
+		<tr>
+			<th> All Chat Rooms</th>
+		</tr>
+	</table>
+	
+	<div id="divdeps" style= "display:none" title = "Conversation Title" class = "divdeps">
+		<div id = "chatlog"></div>
+		<form class = "enterMessage">
+			Enter Message: <textarea id="message" class = "message" cols="30" rows="5"></textarea> 
+			<button type = "submit" value = "send" id = "send" onclick = "sendMessage();"> Send </button>
+		</form> 
+	</div>
+	
+<!--	<div id = "chatBox" class = "modal">
+		<div class= "chatRoom-content">
+			<span class = "close"> &times; </span>
+		</div>
+		
+	</div>-->
+	
+	<script>
+		
+	</script>
+	
+</body>
+</html>
