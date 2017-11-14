@@ -158,7 +158,7 @@ io.sockets.on("connection", function(socket){
 	});
 	socket.on('banUser', function(username) {
 		var inList = false;
-		var bannedList = chatrooms[chatName].banned;
+		var bannedList = chatrooms[socket.room].banned;
 		for (var i = 0; i < bannedList.length; i++) {
 			if (socket.username == bannedList[i]) {
 				inList = true;
@@ -177,5 +177,15 @@ io.sockets.on("connection", function(socket){
 		socket.leave(socket.room);
 		socket.room = '';
 		console.log(chatrooms);
+	});
+	socket.on('prvMsg', function(username) {
+		socket.join(String("prvMsg" + socket.username + username));
+		io.sockets.connected[usernames[username]].emit("joinPrvChat", socket.username, username);
+	});
+	socket.on('prvMsgConfirm', function(otherUser) {
+		socket.join(String("prvMsg" + otherUser + socket.username));
+	});
+	socket.on('prv_message_to_server', function(data) {
+		io.sockets.in(socket.room).emit("prv_message_to_client", socket.username, {message:data["message"] }) // broadcast the message to other users
 	});
 });

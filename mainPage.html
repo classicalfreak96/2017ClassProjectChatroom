@@ -22,25 +22,29 @@
 			var node = document.createElement("tr");
 			var node2 = document.createElement("td");
 			node2.textContent = tempMessage;
+			console.log("userDialogue inserted");
+			node2.addEventListener("dblclick", function(){
+				console.log("double clicked");
+				$("#userDialogue").dialog({
+					autoOpen: false,
+					show: false,
+					resizable: true,
+					position: 'center',
+					stack: true,
+					height: 80,
+					width: 300,
+					title: "action on " + username,
+					modal: false
+				});
+				$("#userDialogue").data("username", username);
+				$("#userDialogue").dialog('open');
+			}, false);
 			if (creator) {
-				console.log("userDialogue inserted");
-				node2.addEventListener("dblclick", function(){
-					console.log("double clicked");
-					$("#userDialogue").dialog({
-						autoOpen: false,
-						show: false,
-						resizable: true,
-						position: 'center',
-						stack: true,
-						height: 50,
-						width: 300,
-						title: "action on" + username,
-						modal: false
-					});
-					$("#userDialogue").data("username", username);
-					$("#userDialogue").dialog('open');
-				}, false);
-			};
+				document.getElementById("kickUser").style.visibility = "visible";
+			}
+			else {
+				document.getElementById("kickUser").style.visibility = "hidden";
+			}
 			node.appendChild(node2);
 			document.getElementById("chatMessages").appendChild(node);
 		});
@@ -48,7 +52,6 @@
 			while (document.getElementById("allChats").childNodes.length > 2){
 				document.getElementById("allChats").removeChild(document.getElementById("allChats").lastChild);
 			}
-//			for (var room in chatrooms) {
 			Object.keys(chatrooms).forEach(function(room){
 				var chatName = String(room);
 				var node = document.createElement("tr");
@@ -78,8 +81,7 @@
 				}, false);
 				node.appendChild(node2);
 				document.getElementById("allChats").appendChild(node);
-//			};
-				 });
+			});
 		});
 		socketio.on('usageMessage', function(message){
 			alert(message);
@@ -107,6 +109,28 @@
 		});
 		socketio.on("passwordVerify",function(chatName) {
 			socketio.emit('verifiedPassword', prompt("Enter Password: "), chatName);
+		});
+		socketio.on("joinPrvChat",function(username, otherUser) {
+			$("#prvMsgChat").dialog({
+				autoOpen: false,
+				show: false,
+				resizable: true,
+				position: 'center',
+				stack: true,
+				height: 400,
+				width: 400,
+				title: "private chat with " + username,
+				modal: false
+			});
+			$("#prvMsgChat").dialog('open');
+			socketio.emit('prvMsgConfirm', otherUser);
+		});
+		socketio.on("prv_message_to_client",function(username, data) {
+			var node = document.createElement("tr");
+			var node2 = document.createElement("td");
+			node2.textContent = username + ": " + data["message"];
+			node.appendChild(node2);
+			document.getElementById("prvChatMessages").appendChild(node);
 		});
 
 		function addChat(){
@@ -137,6 +161,28 @@
 		function banUser(username) {
 			socketio.emit("banUser", username);
 			$("#userDialogue").dialog('close');
+		}
+
+		function prvMsg(username) {
+			socketio.emit("prvMsg", username);
+			$("#prvMsgChat").dialog({
+				autoOpen: false,
+				show: false,
+				resizable: true,
+				position: 'center',
+				stack: true,
+				height: 400,
+				width: 400,
+				title: "private chat with " + username,
+				modal: false
+			});
+			$("#userDialogue").dialog('close');
+			$("#prvMsgChat").dialog('open');
+		}
+		function sendPrvMessage() {
+			var msg = document.getElementById("prvMessage").value;
+			socketio.emit("prv_message_to_server", {message:msg});
+			document.getElementById("message").value = '';
 		}
 	</script>
 </head>
@@ -171,10 +217,21 @@
 			<button type = "submit" value = "send" id = "send" onclick = "sendMessage();"> Send </button>
 
 		</div>
+		<div id="prvMsgChat" style= "display:none" title = "Conversation Title" class = "prvMsgChat">
+			<div id = "prvMsgChatlog"></div>
+			<table id = "prvChatMessages" style = "visibility: visible"></table>
+			<form class = "enterMessage">
+				Enter Message: <textarea id="prvMessage" class = "prvMmessage" cols="30" rows="5"></textarea>
+			</form> 
+			<button type = "submit" value = "send" id = "send" onclick = "sendPrvMessage();"> Send </button>
+
+		</div>
 		<div id="userDialogue" style= "display:none" title = "User" class = "userDialogue">
-			<div id = "kickUser"></div>
-			<button type = "submit" value = "kick" id = "kick" onclick = "kickUser($('#userDialogue').data('username'));"> Kick User </button>
-			<button type = "submit" value = "ban" id = "ban" onclick = "banUser($('#userDialogue').data('username'));"> Ban User </button>
+			<div id = "kickUser" style = "visibility: hidden">
+				<button type = "submit" value = "kick" id = "kick" onclick = "kickUser($('#userDialogue').data('username'));"> Kick User </button>
+				<button type = "submit" value = "ban" id = "ban" onclick = "banUser($('#userDialogue').data('username'));"> Ban User </button>
+			</div>
+			<button type = "submit" value = "prvMsg" id = "prvMsg" onclick = "prvMsg($('#userDialogue').data('username'));"> Message this user privately </button>
 		</div>
 	</div>
 	
