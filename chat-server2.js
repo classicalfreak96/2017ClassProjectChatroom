@@ -20,6 +20,15 @@ var app = http.createServer(function(req, resp){
 			});
 			
 		}
+		else if (req.url =='/spectrum.css'){
+			fs.readFile("spectrum.css", function(err, data){
+				if (err) console.log(err);
+				resp.writeHead(200, {'Content-Type': 'text/css'});
+				resp.write(data);
+				resp.end();
+			});
+			
+		}		
 		else{
 			if(err) return resp.writeHead(500);
 			resp.writeHead(200);
@@ -74,7 +83,7 @@ io.sockets.on("connection", function(socket){
 	//chatroom handlers---------------------------------------------------------------------------------------
 	socket.on('addChatroom', function(chatName) {
 		var match = false;
-		for (var room in chatrooms) {
+		for (var room in chatrooms) { //looks at all chatrooms to see if the chatroom already exists or not
 			if (room == chatName) {
 				match = true;
 			};
@@ -86,9 +95,9 @@ io.sockets.on("connection", function(socket){
 			socket.emit("usageMessage", "you cannot type in an empty value");
 		}
 		else {
-			chatrooms[chatName] = {
+			chatrooms[chatName] = { //chatroom variables are set
 				"creator" : socket.username,
-				"banned" : [],
+				"banned" : [], //declare banned array as empty
 				"password" : false,
 				"passwordValue" : "",
 			};

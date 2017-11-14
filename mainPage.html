@@ -2,22 +2,25 @@
 <html>
 <head><title>Front Page</title>
 	<link rel="stylesheet" type="text/css" href="chatroom.css"/>
+	<link rel="stylesheet" href="spectrum.css" />
 	<script src="/socket.io/socket.io.js"></script>
 	<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
-	<script src="http://code.jquery.com/ui/1.11.1/jquery-ui.min.js"></script>	
-	<script> 
-		var socketio = io.connect();
+	<script src="http://code.jquery.com/ui/1.11.1/jquery-ui.min.js"></script>
+	<script type = "text/javascript" src="http://bgrins.github.com/spectrum/spectrum.js"></script>
+	<script>
+		var socketio = io.connect(); //connects to socket 
 		var tempMessage = "";
-		socketio.on('connect', function(){
+		var color2;
+		socketio.on('connect', function(){ //when it connects, ask for username
 			// call the server-side function 'adduser' and send one parameter (value of prompt)
 			socketio.emit('adduser', prompt("What's your username?"));
-			document.getElementById("createRoomForm").style.visibility = "visible";
+			document.getElementById("createRoomForm").style.visibility = "visible"; 
 		});
-		socketio.on('reprompt', function(message){
-			console.log("reprompt triggered");
+		socketio.on('reprompt', function(message){ //asks for username again 
+			console.log("reprompt triggered"); 
 			socketio.emit('adduser', prompt(message + " please re-enter username"));
 		});
-		socketio.on('usageMessage', function(message){
+		socketio.on('usageMessage', function(message){ //alert message
 			alert(message);
 		});
 
@@ -30,6 +33,7 @@
 		socketio.on("roomCreatorRes", function(creator, username) {
 			var node = document.createElement("tr");
 			var node2 = document.createElement("td");
+			node2.setAttribute("class", "color");
 			node2.textContent = tempMessage;
 			console.log("userDialogue inserted");
 			node2.addEventListener("dblclick", function(){
@@ -82,14 +86,14 @@
 			}
 			Object.keys(chatrooms).forEach(function(room){
 				var chatName = String(room);
-				var node = document.createElement("tr");
+				var node = document.createElement("tr"); //puts all chatnames in a table
 				var node2 = document.createElement("td");
 				node.setAttribute("id", chatName);
-				node2.textContent = chatName + ", created by " + chatrooms[chatName].creator;
-				if (chatrooms[chatName].password) {
-					node2.textContent += " (protected)";
+				node2.textContent = chatName + ", created by " + chatrooms[chatName].creator; //cell has chat name and the creator of chat
+				if (chatrooms[chatName].password) { // if there is a password
+					node2.textContent += " (protected)"; 
 				}
-				node.addEventListener("dblclick", function(){
+				node.addEventListener("dblclick", function(){ 
 					socketio.emit('switchRoom', chatName);
 					while (document.getElementById("chatMessages").childNodes.length > 0){
 						document.getElementById("chatMessages").removeChild(document.getElementById("chatMessages").lastChild);
@@ -105,7 +109,15 @@
 						title: chatName,
 						modal: false
 					});
-					$("#divdeps").dialog('open');	
+					$("#divdeps").dialog('open');
+					$("#custom").spectrum({ //https://bgrins.github.io/spectrum/
+					color: "#000000",
+					change: function(color){
+						//get color sent to serverMessage
+						alert(color.toHexString());
+						document.getElementById("chatMessages").style.color = color.toHexString();
+					}
+			});
 				}, false);
 				node.appendChild(node2);
 				document.getElementById("allChats").appendChild(node);
@@ -204,7 +216,6 @@
 			socketio.emit("banUser", username);
 			$("#userDialogue").dialog('close');
 		}
-
 	</script>
 </head>
 
@@ -224,9 +235,9 @@
 		</div>
 		
 		<!-- table for existing chatrooms %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   -->
-		<table id = "allChats" style = "visibility: visible">
+		<table id = "allChats" class = "chatTable" style = "visibility: visible">
 			<tr>
-				<th> All Chat Rooms</th>
+				<th class = "chatTableHeader"> All Chat Rooms</th>
 			</tr>
 		</table>
 
@@ -235,7 +246,8 @@
 			<div id = "chatlog"></div>
 			<table id = "chatMessages" style = "visibility: visible"></table>
 			<form class = "enterMessage">
-				Enter Message: <textarea id="message" class = "message" cols="30" rows="5"></textarea>
+				Enter Message: <input type='text' id="custom" class = "custom"/> <!--https://bgrins.github.io/spectrum/-->
+				<textarea id="message" class = "message" cols="30" rows="5"></textarea>
 			</form> 
 			<button type = "submit" value = "send" id = "send" onclick = "sendMessage();"> Send </button>
 		</div>
@@ -261,7 +273,6 @@
 	</div>
 	
 	<script>
-		
 	</script>
 	
 </body>

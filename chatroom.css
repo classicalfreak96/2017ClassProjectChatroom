@@ -1,4 +1,4 @@
-table, th, td {
+.chatTableData, .chatTable, .chatTableHeader{
     border: 1px solid black;
     border-collapse: collapse;
 }
@@ -8,6 +8,10 @@ table, th, td {
     width: 200px;
 }
 */
+
+/*.color {
+    color: green;
+}*/
 .ui-dialog .ui-dialog-content {
     background:  repeat scroll 0 0 white;
     border: 0 none;
@@ -29,12 +33,12 @@ table, th, td {
 }
 
 .enterMessage{
-    margin-top:380px;
+    margin-top:20px;
     margin-left: 10px;
 }
 
 .message{
-    width:93%;
+    width: 93%;
     height: 40px;
 }
 
@@ -57,3 +61,4 @@ table, th, td {
     top: 0;
 
 }
+
