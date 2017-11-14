@@ -13,6 +13,10 @@
 			socketio.emit('adduser', prompt("What's your username?"));
 			document.getElementById("createRoomForm").style.visibility = "visible";
 		});
+		socketio.on('reprompt', function(message){
+			console.log("reprompt triggered");
+			socketio.emit('adduser', prompt(message + " please re-enter username"));
+		});
 		socketio.on('usageMessage', function(message){
 			alert(message);
 		});

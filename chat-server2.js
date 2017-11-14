@@ -37,8 +37,18 @@ io.sockets.on("connection", function(socket){
 	io.sockets.emit("updateRooms", chatrooms);
 	socket.on('adduser', function(username){
 		// store the username in the socket session for this client
-		socket.username = username;
-		usernames[username] = socket.id;
+		if (username == "") {
+			console.log("null username");
+			socket.emit("reprompt", "Username cannot be empty");
+		}
+		else if (username in usernames) {
+			console.log("username already exists");
+			socket.emit("reprompt", "Username already exists");
+		}
+		else {
+			socket.username = username;
+			usernames[username] = socket.id;
+		}
 	});
 
 
