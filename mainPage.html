@@ -13,8 +13,13 @@
 			socketio.emit('adduser', prompt("What's your username?"));
 			document.getElementById("createRoomForm").style.visibility = "visible";
 		});
+		socketio.on('usageMessage', function(message){
+			alert(message);
+		});
+
+
+		//message handlers------------------------------------------------------------------------------------------------------------
 		socketio.on("message_to_client",function(username, data) {
-			//Append an HR thematic break and the escaped HTML of the new message
 			tempMessage = username + ": " + data["message"];
 			socketio.emit('roomCreator', username);
 		});
@@ -48,6 +53,25 @@
 			node.appendChild(node2);
 			document.getElementById("chatMessages").appendChild(node);
 		});
+		socketio.on('serverMessage', function(chatName, message){
+			var node = document.createElement("tr");
+			var node2 = document.createElement("td");
+			node.setAttribute("id", chatName);
+			node2.textContent = message;
+			node.appendChild(node2);
+			document.getElementById("chatMessages").appendChild(node);
+		});
+		socketio.on("prv_message_to_client",function(username, data) {
+			var node = document.createElement("tr");
+			var node2 = document.createElement("td");
+			node2.textContent = username + ": " + data["message"];
+			node.appendChild(node2);
+			document.getElementById("prvChatMessages").appendChild(node);
+		});
+
+
+
+		//chatroom handlers--------------------------------------------------------------------------------------------------------------
 		socketio.on('updateRooms', function(chatrooms){
 			while (document.getElementById("allChats").childNodes.length > 2){
 				document.getElementById("allChats").removeChild(document.getElementById("allChats").lastChild);
@@ -83,33 +107,6 @@
 				document.getElementById("allChats").appendChild(node);
 			});
 		});
-		socketio.on('usageMessage', function(message){
-			alert(message);
-		});
-		socketio.on('serverMessage', function(chatName, message){
-			var node = document.createElement("tr");
-			var node2 = document.createElement("td");
-			node.setAttribute("id", chatName);
-			node2.textContent = message;
-			node.appendChild(node2);
-			document.getElementById("chatMessages").appendChild(node);
-		});
-		socketio.on("confirmKickUser", function() {
-			console.log("user kicked");
-			$("#divdeps").dialog('close');
-			socketio.emit('kickUserServer');
-		});
-		socketio.on("confirmBanUser", function() {
-			console.log("user banned");
-			$("#divdeps").dialog('close');
-			socketio.emit('banUserServer');
-		});
-		socketio.on("closeDialogue", function() {
-			$("#divdeps").dialog('close');
-		});
-		socketio.on("passwordVerify",function(chatName) {
-			socketio.emit('verifiedPassword', prompt("Enter Password: "), chatName);
-		});
 		socketio.on("joinPrvChat",function(username, otherUser) {
 			$("#prvMsgChat").dialog({
 				autoOpen: false,
@@ -125,14 +122,46 @@
 			$("#prvMsgChat").dialog('open');
 			socketio.emit('prvMsgConfirm', otherUser);
 		});
-		socketio.on("prv_message_to_client",function(username, data) {
-			var node = document.createElement("tr");
-			var node2 = document.createElement("td");
-			node2.textContent = username + ": " + data["message"];
-			node.appendChild(node2);
-			document.getElementById("prvChatMessages").appendChild(node);
+
+
+
+		//password handers----------------------------------------------------------------------------------------------------------------
+		socketio.on("passwordVerify",function(chatName) {
+			socketio.emit('verifiedPassword', prompt("Enter Password: "), chatName);
 		});
 
+
+
+		//user action handlers-------------------------------------------------------------------------------------------------------------
+		socketio.on("confirmKickUser", function() {
+			console.log("user kicked");
+			$("#divdeps").dialog('close');
+			socketio.emit('kickUserServer');
+		});
+		socketio.on("confirmBanUser", function() {
+			console.log("user banned");
+			$("#divdeps").dialog('close');
+			socketio.emit('banUserServer');
+		});
+		socketio.on("closeDialogue", function() {
+			$("#divdeps").dialog('close');
+		});
+
+		//functions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+		//message handlers------------------------------------------------------------------------------------------------------------------
+		function sendMessage(){
+			var msg = document.getElementById("message").value;
+			socketio.emit("message_to_server", {message:msg});
+			document.getElementById("message").value = '';
+		}
+
+		function sendPrvMessage() {
+			var msg = document.getElementById("prvMessage").value;
+			socketio.emit("prv_message_to_server", {message:msg});
+			document.getElementById("message").value = '';
+		}
+
+		//room handers----------------------------------------------------------------------------------------------------------------------
 		function addChat(){
 			var chatName = document.getElementById("roomName").value;
 			document.getElementById("roomName").value = "";
@@ -143,24 +172,6 @@
 			var chatName = document.getElementById("roomName").value;
 			document.getElementById("roomName").value = "";
 			socketio.emit('addProtectedChatroom', prompt("Enter Password: "), chatName);
-		}
-
-		function sendMessage(){
-			var msg = document.getElementById("message").value;
-			socketio.emit("message_to_server", {message:msg});
-			document.getElementById("message").value = '';
-		}
-
-		function openUserDialogue() {
-			console.log("clicked");
-		}
-		function kickUser(username) {
-			socketio.emit("kickUser", username);
-			$("#userDialogue").dialog('close');
-		}
-		function banUser(username) {
-			socketio.emit("banUser", username);
-			$("#userDialogue").dialog('close');
 		}
 
 		function prvMsg(username) {
@@ -179,35 +190,43 @@
 			$("#userDialogue").dialog('close');
 			$("#prvMsgChat").dialog('open');
 		}
-		function sendPrvMessage() {
-			var msg = document.getElementById("prvMessage").value;
-			socketio.emit("prv_message_to_server", {message:msg});
-			document.getElementById("message").value = '';
+
+		//user action handlers--------------------------------------------------------------------------------------------------------------
+		function kickUser(username) {
+			socketio.emit("kickUser", username);
+			$("#userDialogue").dialog('close');
 		}
+		function banUser(username) {
+			socketio.emit("banUser", username);
+			$("#userDialogue").dialog('close');
+		}
+
 	</script>
 </head>
+
+
+
+
+<!-- html code for webpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     -->
 <body> 
 	<!-- 	returning user login -->
-	<div id = "loginForm">
-		<div id = "logoutForm" style = "visibility: hidden">
-			<p>
-				<button id="logout_btn" onclick = "logout(event);" visibility = "hidden">Log Out</button>
-				<button id="delete_btn" onclick = "deleteAccount(event);">Delete Account</button>
-			</p>
-		</div>
+	<div>
+		<!-- form for creating new room %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     -->
 		<div id = "createRoomForm" style = "visibility: hidden"> 
 			Create a chat room:
 			Enter chatroom name: <input type = "text" class = "chatName" id = "roomName"/>
 			<button type = "submit" value = "addChat" id = "addChat" onclick = "addChat();"> Create Chat Room</button>
 			<button type = "submit" value = "addProtectedChat" id = "addProtectedChat" onclick = "addProtectedChat();"> Create Protected Chat Room</button>
 		</div>
-
+		
+		<!-- table for existing chatrooms %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   -->
 		<table id = "allChats" style = "visibility: visible">
 			<tr>
 				<th> All Chat Rooms</th>
 			</tr>
 		</table>
 
+		<!-- form for chat dialogue %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          -->
 		<div id="divdeps" style= "display:none" title = "Conversation Title" class = "divdeps">
 			<div id = "chatlog"></div>
 			<table id = "chatMessages" style = "visibility: visible"></table>
@@ -215,8 +234,9 @@
 				Enter Message: <textarea id="message" class = "message" cols="30" rows="5"></textarea>
 			</form> 
 			<button type = "submit" value = "send" id = "send" onclick = "sendMessage();"> Send </button>
-
 		</div>
+
+		<!-- form for private chat dialogue %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          -->
 		<div id="prvMsgChat" style= "display:none" title = "Conversation Title" class = "prvMsgChat">
 			<div id = "prvMsgChatlog"></div>
 			<table id = "prvChatMessages" style = "visibility: visible"></table>
@@ -224,8 +244,9 @@
 				Enter Message: <textarea id="prvMessage" class = "prvMmessage" cols="30" rows="5"></textarea>
 			</form> 
 			<button type = "submit" value = "send" id = "send" onclick = "sendPrvMessage();"> Send </button>
-
 		</div>
+
+		<!-- form for selecting what to do with selected user %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       -->
 		<div id="userDialogue" style= "display:none" title = "User" class = "userDialogue">
 			<div id = "kickUser" style = "visibility: hidden">
 				<button type = "submit" value = "kick" id = "kick" onclick = "kickUser($('#userDialogue').data('username'));"> Kick User </button>

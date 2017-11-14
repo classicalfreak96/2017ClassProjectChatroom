@@ -40,6 +40,9 @@ io.sockets.on("connection", function(socket){
 		socket.username = username;
 		usernames[username] = socket.id;
 	});
+
+
+	//message handlers---------------------------------------------------------------------------------------
 	socket.on('message_to_server', function(data) {
 		io.sockets.in(socket.room).emit("message_to_client", socket.username, {message:data["message"] }) // broadcast the message to other users
 	});
@@ -54,6 +57,11 @@ io.sockets.on("connection", function(socket){
 			socket.emit("roomCreatorRes", false, username);
 		}
 	});
+	socket.on('prv_message_to_server', function(data) {
+		io.sockets.in(socket.room).emit("prv_message_to_client", socket.username, {message:data["message"] }) // broadcast the message to other users
+	});
+
+	//chatroom handlers---------------------------------------------------------------------------------------
 	socket.on('addChatroom', function(chatName) {
 		var match = false;
 		for (var room in chatrooms) {
@@ -102,6 +110,13 @@ io.sockets.on("connection", function(socket){
 			console.log(chatrooms);
 		};
 	});
+	socket.on('prvMsg', function(username) {
+		socket.join(String("prvMsg" + socket.username + username));
+		io.sockets.connected[usernames[username]].emit("joinPrvChat", socket.username, username);
+	});
+	socket.on('prvMsgConfirm', function(otherUser) {
+		socket.join(String("prvMsg" + otherUser + socket.username));
+	});
 	socket.on('switchRoom', function(chatName) {
 		console.log(chatName + " clicked");
 		var bannedList = chatrooms[chatName].banned;
@@ -129,6 +144,9 @@ io.sockets.on("connection", function(socket){
 			}
 		}
 	});
+
+
+	//password handlers-------------------------------------------------------------------------------------------------
 	socket.on('verifiedPassword', function(password, chatName) {
 		if (password == chatrooms[chatName].passwordValue) {
 			socket.broadcast.to(socket.room).emit('serverMessage', socket.room, socket.username + " has left the room");
@@ -143,6 +161,10 @@ io.sockets.on("connection", function(socket){
 			socket.emit("closeDialogue");
 		}
 	});
+
+
+
+	//user action handlers---------------------------------------------------------------------------------------------
 	socket.on('kickUser', function(username) {
 		if (io.sockets.connected[usernames[username]] != "undefined") {
 			io.sockets.connected[usernames[username]].emit("confirmKickUser");
@@ -177,15 +199,5 @@ io.sockets.on("connection", function(socket){
 		socket.leave(socket.room);
 		socket.room = '';
 		console.log(chatrooms);
-	});
-	socket.on('prvMsg', function(username) {
-		socket.join(String("prvMsg" + socket.username + username));
-		io.sockets.connected[usernames[username]].emit("joinPrvChat", socket.username, username);
-	});
-	socket.on('prvMsgConfirm', function(otherUser) {
-		socket.join(String("prvMsg" + otherUser + socket.username));
-	});
-	socket.on('prv_message_to_server', function(data) {
-		io.sockets.in(socket.room).emit("prv_message_to_client", socket.username, {message:data["message"] }) // broadcast the message to other users
 	});
 });
