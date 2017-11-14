@@ -3,8 +3,8 @@ var http = require("http"),
 socketio = require("socket.io"),
 fs = require("fs");
 
-var usernames = [];
-var chatrooms = [];
+var usernames = {};
+var chatrooms = {};
 
 // Listen for HTTP connections.  This is essentially a miniature static file server that only serves our one file, client.html:
 var app = http.createServer(function(req, resp){
@@ -38,35 +38,144 @@ io.sockets.on("connection", function(socket){
 	socket.on('adduser', function(username){
 		// store the username in the socket session for this client
 		socket.username = username;
+		usernames[username] = socket.id;
 	});
 	socket.on('message_to_server', function(data) {
 		io.sockets.in(socket.room).emit("message_to_client", socket.username, {message:data["message"] }) // broadcast the message to other users
 	});
+	socket.on('roomCreator', function(username) {
+		console.log("user: " + socket.username + "|| room: " + socket.room + "|| creator: " + chatrooms[socket.room].creator)
+		if (socket.username == chatrooms[socket.room].creator) {
+			console.log("true emitted")
+			socket.emit("roomCreatorRes", true, username);
+		}
+		else {
+			console.log("false emitted")
+			socket.emit("roomCreatorRes", false, username);
+		}
+	});
 	socket.on('addChatroom', function(chatName) {
 		var match = false;
-		chatrooms.forEach(function(room){
+		for (var room in chatrooms) {
 			if (room == chatName) {
 				match = true;
 			};
-		});
+		};
 		if (match) {
-			io.sockets.emit("usageMessage", "chatroom already exists");
+			socket.emit("usageMessage", "chatroom already exists");
 		}
 		else if (chatName == "") {
-			io.sockets.emit("usageMessage", "you cannot type in an empty value");
+			socket.emit("usageMessage", "you cannot type in an empty value");
 		}
 		else {
-				console.log(chatrooms);
-				io.sockets.emit("confirmAddChatroom", chatName);
-				chatrooms.push(chatName);
-				io.sockets.emit("updateRooms", chatrooms);
+			chatrooms[chatName] = {
+				"creator" : socket.username,
+				"banned" : [],
+				"password" : false,
+				"passwordValue" : "",
 			};
-		});
-	socket.on('switchRoom', function(chatName) {
-		socket.leave(socket.room);
-		socket.join(chatName);
-		socket.room = chatName;
-		console.log(socket.username + " is in " + socket.room);
+			io.sockets.emit("updateRooms", chatrooms);
+			console.log(chatrooms);
+		};
 	});
-
+	socket.on('addProtectedChatroom', function(password, chatName) {
+		var match = false;
+		for (var room in chatrooms) {
+			if (room == chatName) {
+				match = true;
+			};
+		};
+		if (match) {
+			socket.emit("usageMessage", "chatroom already exists");
+		}
+		else if (chatName == "") {
+			socket.emit("usageMessage", "you cannot type in an empty value");
+		}
+		else {
+			chatrooms[chatName] = {
+				"creator" : socket.username,
+				"banned" : [],
+				"password" : true,
+				"passwordValue" : password,
+			};
+			io.sockets.emit("updateRooms", chatrooms);
+			console.log(chatrooms);
+		};
+	});
+	socket.on('switchRoom', function(chatName) {
+		console.log(chatName + " clicked");
+		var bannedList = chatrooms[chatName].banned;
+		var inList = false;
+		for (var i = 0; i < bannedList.length; i++) {
+			if (socket.username == bannedList[i]) {
+				inList = true;
+			};
+		};
+		if (inList) {
+			socket.emit("closeDialogue");
+			socket.emit("usageMessage", "You have been banned from this chatroom. You may not join.");
+		}
+		else {
+			if (chatrooms[chatName].password){
+				socket.emit('passwordVerify', chatName);
+			}
+			else {
+				socket.broadcast.to(socket.room).emit('serverMessage', socket.room, socket.username + " has left the room");
+				socket.leave(socket.room);
+				socket.join(chatName);
+				socket.room = chatName;
+				socket.broadcast.to(socket.room).emit('serverMessage', socket.room, socket.username + " has joined the room");
+				console.log(socket.username + " is in " + socket.room);
+			}
+		}
+	});
+	socket.on('verifiedPassword', function(password, chatName) {
+		if (password == chatrooms[chatName].passwordValue) {
+			socket.broadcast.to(socket.room).emit('serverMessage', socket.room, socket.username + " has left the room");
+			socket.leave(socket.room);
+			socket.join(chatName);
+			socket.room = chatName;
+			socket.broadcast.to(socket.room).emit('serverMessage', socket.room, socket.username + " has joined the room");
+			console.log(socket.username + " is in " + socket.room);
+		}
+		else {
+			socket.emit("usageMessage", "Incorrect Password");
+			socket.emit("closeDialogue");
+		}
+	});
+	socket.on('kickUser', function(username) {
+		if (io.sockets.connected[usernames[username]] != "undefined") {
+			io.sockets.connected[usernames[username]].emit("confirmKickUser");
+			io.sockets.connected[usernames[username]].emit("usageMessage", "You have been kicked from this chat room");
+		}
+		else {
+			socket.emit("usageMessage", "User is not found or has already been kicked");
+		}
+	});
+	socket.on('kickUserServer', function() {
+		socket.leave(socket.room);
+		socket.room = '';
+	});
+	socket.on('banUser', function(username) {
+		var inList = false;
+		var bannedList = chatrooms[chatName].banned;
+		for (var i = 0; i < bannedList.length; i++) {
+			if (socket.username == bannedList[i]) {
+				inList = true;
+			};
+		};
+		if (io.sockets.connected[usernames[username]] != "undefined") {
+			io.sockets.connected[usernames[username]].emit("confirmBanUser");
+			io.sockets.connected[usernames[username]].emit("usageMessage", "You have been banned from this chat room");
+		}
+		else {
+			socket.emit("usageMessage", "User is not found or has already been banned");
+		}
+	});
+	socket.on('banUserServer', function() {
+		chatrooms[socket.room].banned.push(socket.username);
+		socket.leave(socket.room);
+		socket.room = '';
+		console.log(chatrooms);
+	});
 });
