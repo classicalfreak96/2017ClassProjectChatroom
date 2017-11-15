@@ -10,9 +10,11 @@
 	<script>
 		var socketio = io.connect(); //connects to socket 
 		var tempMessage = "";
-		var color2;
+		var colorVar = "";
+		var tempColor = "";
 		socketio.on('connect', function(){ //when it connects, ask for username
 			// call the server-side function 'adduser' and send one parameter (value of prompt)
+			console.log("connected");
 			socketio.emit('adduser', prompt("What's your username?"));
 			document.getElementById("createRoomForm").style.visibility = "visible"; 
 		});
@@ -28,12 +30,16 @@
 		//message handlers------------------------------------------------------------------------------------------------------------
 		socketio.on("message_to_client",function(username, data) {
 			tempMessage = username + ": " + data["message"];
+			tempColor = data["color"];
 			socketio.emit('roomCreator', username);
 		});
 		socketio.on("roomCreatorRes", function(creator, username) {
 			var node = document.createElement("tr");
 			var node2 = document.createElement("td");
 			node2.setAttribute("class", "color");
+			console.log("tempColor is: " + tempColor); 
+			node2.setAttribute("style", "color:" +  tempColor);
+			//document.getElementById("chatMessages").style.color = tempColor;
 			node2.textContent = tempMessage;
 			console.log("userDialogue inserted");
 			node2.addEventListener("dblclick", function(){
@@ -62,6 +68,7 @@
 			document.getElementById("chatMessages").appendChild(node);
 		});
 		socketio.on('serverMessage', function(chatName, message){
+			console.log("server message");
 			var node = document.createElement("tr");
 			var node2 = document.createElement("td");
 			node.setAttribute("id", chatName);
@@ -98,6 +105,7 @@
 					while (document.getElementById("chatMessages").childNodes.length > 0){
 						document.getElementById("chatMessages").removeChild(document.getElementById("chatMessages").lastChild);
 					}
+					repopulateChat(room);
 					$("#divdeps").dialog({
 						autoOpen: false,
 						show: false,
@@ -111,23 +119,32 @@
 					});
 					$("#divdeps").dialog('open');
 					$("#custom").spectrum({ //https://bgrins.github.io/spectrum/
-					color: "#000000",
-					change: function(color){ //when a new font color is selected
-						//get color sent to serverMessage
-						alert(color.toHexString());
-						document.getElementById("chatMessages").style.color = color.toHexString();
-						}
-					});
-					$("#message").keyup(function(event) {
-						if (event.keyCode === 13) {
-						$("#message").click();
-							}
-					});
+						color: "#000000",
+						change: function(color){
+						colorVar = String(color.toHexString());
+					}
+				});
 				}, false);
 				node.appendChild(node2);
 				document.getElementById("allChats").appendChild(node);
 			});
 		});
+		socketio.on('repopulateChat', function(chatrooms, room){
+			for (var i = 0; i < chatrooms[room].messageLog.length; i++) {
+				var node = document.createElement("tr");
+				var node2 = document.createElement("td");
+				node2.setAttribute("class", "color");
+				node2.setAttribute("style", "color:" + chatrooms[room].messageLog[i].color);
+				node2.textContent = chatrooms[room].messageLog[i].username + ": " + chatrooms[room].messageLog[i].message;
+				node.appendChild(node2);
+				document.getElementById("chatMessages").appendChild(node);
+			};
+			var node3 = document.createElement("tr");
+			var node4 = document.createElement("td");
+			node4.textContent = "-----END OF CHAT HISTORY-----";
+			node3.appendChild(node4);
+			document.getElementById("chatMessages").appendChild(node3);
+		})
 		socketio.on("joinPrvChat",function(username, otherUser) {
 			$("#prvMsgChat").dialog({
 				autoOpen: false,
@@ -172,14 +189,15 @@
 		//message handlers------------------------------------------------------------------------------------------------------------------
 		function sendMessage(){
 			var msg = document.getElementById("message").value;
-			socketio.emit("message_to_server", {message:msg});
+			console.log("color is " + colorVar);
+			socketio.emit("message_to_server", {message:msg, color: colorVar});
 			document.getElementById("message").value = '';
 		}
 
 		function sendPrvMessage() {
 			var msg = document.getElementById("prvMessage").value;
 			socketio.emit("prv_message_to_server", {message:msg});
-			document.getElementById("message").value = '';
+			document.getElementById("prvMessage").value = '';
 		}
 
 		//room handers----------------------------------------------------------------------------------------------------------------------
@@ -212,6 +230,10 @@
 			$("#prvMsgChat").dialog('open');
 		}
 
+		function repopulateChat(room) {
+			socketio.emit("pullRecentData", room);
+		}
+
 		//user action handlers--------------------------------------------------------------------------------------------------------------
 		function kickUser(username) {
 			socketio.emit("kickUser", username);
@@ -220,6 +242,11 @@
 		function banUser(username) {
 			socketio.emit("banUser", username);
 			$("#userDialogue").dialog('close');
+		}
+		function logOut(){
+			socketio.emit("logOut");
+			document.getElementById("createRoomForm").style.visibility = "hidden"; 
+			alert("You have been logged out");
 		}
 	</script>
 </head>
@@ -233,26 +260,29 @@
 	<div>
 		<!-- form for creating new room %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     -->
 		<div id = "createRoomForm" style = "visibility: hidden"> 
-			<h1> Create a Chat Room </h1>
-			<p>Enter chatroom name: <input type = "text" class = "chatName" id = "roomName"/></p>
+			<h1> Create a chat room: </h1>
+			Enter chatroom name: <input type = "text" class = "chatName" id = "roomName"/>
 			<button type = "submit" value = "addChat" id = "addChat" onclick = "addChat();"> Create Chat Room</button>
 			<button type = "submit" value = "addProtectedChat" id = "addProtectedChat" onclick = "addProtectedChat();"> Create Protected Chat Room</button>
-		</div>
+			<button type = "submit" value = "logOut" id = "logOut" onclick = "logOut();"> Log Out</button>
+		
 		
 		<!-- table for existing chatrooms %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   -->
-		<br>
-		<table id = "allChats" class = "chatTable" style = "visibility: visible">
-			<tr>
-				<th class = "chatTableHeader"> All Chat Rooms</th>
-			</tr>
-		</table>
+			<br>
+			<table id = "allChats" class = "chatTable">
+				<tr>
+					<th class = "chatTableHeader"> All Chat Rooms</th>
+				</tr>
+			</table>
+		</div>
+
 		<!-- form for chat dialogue %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          -->
 		<div id="divdeps" style= "display:none" title = "Conversation Title" class = "divdeps">
 			<div id = "chatlog"></div>
 			<table id = "chatMessages" style = "visibility: visible"></table>
 			<form class = "enterMessage">
 				Enter Message: <input type='text' id="custom" class = "custom"/> <!--https://bgrins.github.io/spectrum/-->
-				<textarea id="message" class = "message" cols="30" rows="5" onkeypress = "if (event.keyCode == 13) sendMessage();"></textarea>
+				<textarea id="message" class = "message" onkeypress = "if (event.keyCode==13) sendMessage();" cols="30" rows="5"></textarea>
 			</form> 
 			<button type = "submit" value = "send" id = "send1" onclick = "sendMessage();"> Send </button>
 		</div>
@@ -262,7 +292,7 @@
 			<div id = "prvMsgChatlog"></div>
 			<table id = "prvChatMessages" style = "visibility: visible"></table>
 			<form class = "enterMessage">
-				Enter Message: <textarea id="prvMessage" class = "prvMmessage" cols="30" rows="5" onkeypress = "if (event.keyCode == 13) sendMessage();"></textarea>
+				Enter Message: <textarea id="prvMessage" class = "prvMessage" onkeypress= "if (event.keyCode==13) sendPrvMessage();" cols="30" rows="5"></textarea>
 			</form> 
 			<button type = "submit" value = "send" id = "send2" onclick = "sendPrvMessage();"> Send </button>
 		</div>

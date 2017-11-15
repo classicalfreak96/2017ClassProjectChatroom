@@ -63,7 +63,12 @@ io.sockets.on("connection", function(socket){
 
 	//message handlers---------------------------------------------------------------------------------------
 	socket.on('message_to_server', function(data) {
-		io.sockets.in(socket.room).emit("message_to_client", socket.username, {message:data["message"] }) // broadcast the message to other users
+		chatrooms[socket.room].messageLog.push({
+			"username" : socket.username, 
+			"color" : data["color"], 
+			"message" : data["message"]
+		});
+		io.sockets.in(socket.room).emit("message_to_client", socket.username, {message:data["message"], color:data["color"]}) // broadcast the message to other users
 	});
 	socket.on('roomCreator', function(username) {
 		console.log("user: " + socket.username + "|| room: " + socket.room + "|| creator: " + chatrooms[socket.room].creator)
@@ -77,6 +82,11 @@ io.sockets.on("connection", function(socket){
 		}
 	});
 	socket.on('prv_message_to_server', function(data) {
+		chatrooms[socket.room].messageLog.push({
+			"username" : socket.username, 
+			"color" : data["color"], 
+			"message" : data["message"]
+		});
 		io.sockets.in(socket.room).emit("prv_message_to_client", socket.username, {message:data["message"] }) // broadcast the message to other users
 	});
 
@@ -91,7 +101,7 @@ io.sockets.on("connection", function(socket){
 		if (match) {
 			socket.emit("usageMessage", "chatroom already exists");
 		}
-		else if (chatName == "") {
+		else if ((chatName == "") || (chatName == null)) {
 			socket.emit("usageMessage", "you cannot type in an empty value");
 		}
 		else {
@@ -100,6 +110,7 @@ io.sockets.on("connection", function(socket){
 				"banned" : [], //declare banned array as empty
 				"password" : false,
 				"passwordValue" : "",
+				"messageLog" : []
 			};
 			io.sockets.emit("updateRooms", chatrooms);
 			console.log(chatrooms);
@@ -115,8 +126,11 @@ io.sockets.on("connection", function(socket){
 		if (match) {
 			socket.emit("usageMessage", "chatroom already exists");
 		}
-		else if (chatName == "") {
+		else if ((chatName == "") || (chatName == null)) {
 			socket.emit("usageMessage", "you cannot type in an empty value");
+		}
+		else if ((password == "") || (password == null)) {
+			socket.emit("usageMessage", "password cannot be empty");
 		}
 		else {
 			chatrooms[chatName] = {
@@ -124,6 +138,7 @@ io.sockets.on("connection", function(socket){
 				"banned" : [],
 				"password" : true,
 				"passwordValue" : password,
+				"messageLog" : []
 			};
 			io.sockets.emit("updateRooms", chatrooms);
 			console.log(chatrooms);
@@ -154,25 +169,48 @@ io.sockets.on("connection", function(socket){
 				socket.emit('passwordVerify', chatName);
 			}
 			else {
-				socket.broadcast.to(socket.room).emit('serverMessage', socket.room, socket.username + " has left the room");
+				socket.broadcast.to(socket.room).emit('serverMessage', socket.room, "SERVER: " + socket.username + " has left the room");
+				// chatrooms[socket.room].messageLog.push({
+				// 	"username" : "SERVER", 
+				// 	"color" : "#000000", 
+				// 	"message" : socket.username + " has left the room"
+				// });
 				socket.leave(socket.room);
 				socket.join(chatName);
 				socket.room = chatName;
-				socket.broadcast.to(socket.room).emit('serverMessage', socket.room, socket.username + " has joined the room");
+				socket.broadcast.to(socket.room).emit('serverMessage', socket.room, "SERVER: " + socket.username + " has joined the room");
+				// chatrooms[socket.room].messageLog.push({
+				// 	"username" : "SERVER", 
+				// 	"color" : "#000000", 
+				// 	"message" : socket.username + " has joined the room"
+				// });
 				console.log(socket.username + " is in " + socket.room);
 			}
 		}
+	});
+	socket.on('pullRecentData', function(room) {
+		socket.emit('repopulateChat', chatrooms, room);
 	});
 
 
 	//password handlers-------------------------------------------------------------------------------------------------
 	socket.on('verifiedPassword', function(password, chatName) {
 		if (password == chatrooms[chatName].passwordValue) {
-			socket.broadcast.to(socket.room).emit('serverMessage', socket.room, socket.username + " has left the room");
+			socket.broadcast.to(socket.room).emit('serverMessage', socket.room, "SERVER: " + socket.username + " has left the room");
+			// chatrooms[socket.room].messageLog.push({
+			// 		"username" : "SERVER", 
+			// 		"color" : "#000000", 
+			// 		"message" : socket.username + " has left the room"
+			// 	});
 			socket.leave(socket.room);
 			socket.join(chatName);
 			socket.room = chatName;
-			socket.broadcast.to(socket.room).emit('serverMessage', socket.room, socket.username + " has joined the room");
+			socket.broadcast.to(socket.room).emit('serverMessage', socket.room, "SERVER: " + socket.username + " has joined the room");
+			// chatrooms[socket.room].messageLog.push({
+			// 		"username" : "SERVER", 
+			// 		"color" : "#000000", 
+			// 		"message" : socket.username + " has joined the room"
+			// 	});
 			console.log(socket.username + " is in " + socket.room);
 		}
 		else {
@@ -194,6 +232,12 @@ io.sockets.on("connection", function(socket){
 		}
 	});
 	socket.on('kickUserServer', function() {
+		socket.broadcast.to(socket.room).emit('serverMessage', socket.room, socket.username + " has been kicked from the room");
+		chatrooms[socket.room].messageLog.push({
+			"username" : "SERVER", 
+			"color" : "#000000", 
+			"message" : socket.username + " was kicked from the chatroom"
+		});
 		socket.leave(socket.room);
 		socket.room = '';
 	});
@@ -214,9 +258,20 @@ io.sockets.on("connection", function(socket){
 		}
 	});
 	socket.on('banUserServer', function() {
+		socket.broadcast.to(socket.room).emit('serverMessage', socket.room, socket.username + " has been banned from the room");
+		chatrooms[socket.room].messageLog.push({
+			"username" : "SERVER", 
+			"color" : "#000000", 
+			"message" : socket.username + " was banned from this chatroom"
+		});
 		chatrooms[socket.room].banned.push(socket.username);
 		socket.leave(socket.room);
 		socket.room = '';
 		console.log(chatrooms);
 	});
+	socket.on('logOut', function(){
+		socket.broadcast.to(socket.room).emit('serverMessage', socket.room, socket.username + " has logged out");
+		socket.leave(socket.room);
+		socket.room = '';
+	})
 });
