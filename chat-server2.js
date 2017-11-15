@@ -272,6 +272,7 @@ io.sockets.on("connection", function(socket){
 	socket.on('logOut', function(){
 		socket.broadcast.to(socket.room).emit('serverMessage', socket.room, socket.username + " has logged out");
 		socket.leave(socket.room);
+		usernames.delete(socket.username);
 		socket.room = '';
 	})
 });
