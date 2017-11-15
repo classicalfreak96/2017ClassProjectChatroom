@@ -68,6 +68,7 @@
 			document.getElementById("chatMessages").appendChild(node);
 		});
 		socketio.on('serverMessage', function(chatName, message){
+			console.log("server message");
 			var node = document.createElement("tr");
 			var node2 = document.createElement("td");
 			node.setAttribute("id", chatName);
@@ -104,6 +105,7 @@
 					while (document.getElementById("chatMessages").childNodes.length > 0){
 						document.getElementById("chatMessages").removeChild(document.getElementById("chatMessages").lastChild);
 					}
+					repopulateChat(room);
 					$("#divdeps").dialog({
 						autoOpen: false,
 						show: false,
@@ -119,10 +121,7 @@
 					$("#custom").spectrum({ //https://bgrins.github.io/spectrum/
 						color: "#000000",
 						change: function(color){
-						//get color sent to serverMessage
-						alert(color.toHexString());
 						colorVar = String(color.toHexString());
-						//document.getElementById("chatMessages").style.color = color.toHexString();
 					}
 				});
 				}, false);
@@ -130,6 +129,22 @@
 				document.getElementById("allChats").appendChild(node);
 			});
 		});
+		socketio.on('repopulateChat', function(chatrooms, room){
+			for (var i = 0; i < chatrooms[room].messageLog.length; i++) {
+				var node = document.createElement("tr");
+				var node2 = document.createElement("td");
+				node2.setAttribute("class", "color");
+				node2.setAttribute("style", "color:" + chatrooms[room].messageLog[i].color);
+				node2.textContent = chatrooms[room].messageLog[i].username + ": " + chatrooms[room].messageLog[i].message;
+				node.appendChild(node2);
+				document.getElementById("chatMessages").appendChild(node);
+			};
+			var node3 = document.createElement("tr");
+			var node4 = document.createElement("td");
+			node4.textContent = "-----END OF CHAT HISTORY-----";
+			node3.appendChild(node4);
+			document.getElementById("chatMessages").appendChild(node3);
+		})
 		socketio.on("joinPrvChat",function(username, otherUser) {
 			$("#prvMsgChat").dialog({
 				autoOpen: false,
@@ -182,7 +197,7 @@
 		function sendPrvMessage() {
 			var msg = document.getElementById("prvMessage").value;
 			socketio.emit("prv_message_to_server", {message:msg});
-			document.getElementById("message").value = '';
+			document.getElementById("prvMessage").value = '';
 		}
 
 		//room handers----------------------------------------------------------------------------------------------------------------------
@@ -215,6 +230,10 @@
 			$("#prvMsgChat").dialog('open');
 		}
 
+		function repopulateChat(room) {
+			socketio.emit("pullRecentData", room);
+		}
+
 		//user action handlers--------------------------------------------------------------------------------------------------------------
 		function kickUser(username) {
 			socketio.emit("kickUser", username);
@@ -223,6 +242,11 @@
 		function banUser(username) {
 			socketio.emit("banUser", username);
 			$("#userDialogue").dialog('close');
+		}
+		function logOut(){
+			socketio.emit("logOut");
+			document.getElementById("createRoomForm").style.visibility = "hidden"; 
+			alert("You have been logged out");
 		}
 	</script>
 </head>
@@ -240,16 +264,17 @@
 			Enter chatroom name: <input type = "text" class = "chatName" id = "roomName"/>
 			<button type = "submit" value = "addChat" id = "addChat" onclick = "addChat();"> Create Chat Room</button>
 			<button type = "submit" value = "addProtectedChat" id = "addProtectedChat" onclick = "addProtectedChat();"> Create Protected Chat Room</button>
-		</div>
+			<button type = "submit" value = "logOut" id = "logOut" onclick = "logOut();"> Log Out</button>
 		
 		
 		<!-- table for existing chatrooms %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   -->
-		<br>
-		<table id = "allChats" class = "chatTable" style = "visibility: visible">
-			<tr>
-				<th class = "chatTableHeader"> All Chat Rooms</th>
-			</tr>
-		</table>
+			<br>
+			<table id = "allChats" class = "chatTable">
+				<tr>
+					<th class = "chatTableHeader"> All Chat Rooms</th>
+				</tr>
+			</table>
+		</div>
 
 		<!-- form for chat dialogue %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          -->
 		<div id="divdeps" style= "display:none" title = "Conversation Title" class = "divdeps">
@@ -267,7 +292,7 @@
 			<div id = "prvMsgChatlog"></div>
 			<table id = "prvChatMessages" style = "visibility: visible"></table>
 			<form class = "enterMessage">
-				Enter Message: <textarea id="prvMessage" class = "prvMmessage" onkeypress= "if (event.keyCode==13) sendPrvMessage();" cols="30" rows="5"></textarea>
+				Enter Message: <textarea id="prvMessage" class = "prvMessage" onkeypress= "if (event.keyCode==13) sendPrvMessage();" cols="30" rows="5"></textarea>
 			</form> 
 			<button type = "submit" value = "send" id = "send2" onclick = "sendPrvMessage();"> Send </button>
 		</div>
