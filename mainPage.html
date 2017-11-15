@@ -37,7 +37,7 @@
 			var node = document.createElement("tr");
 			var node2 = document.createElement("td");
 			node2.setAttribute("class", "color");
-			console.log("tempColor is: " + tempColor);
+			console.log("tempColor is: " + tempColor); 
 			node2.setAttribute("style", "color:" +  tempColor);
 			//document.getElementById("chatMessages").style.color = tempColor;
 			node2.textContent = tempMessage;
@@ -236,13 +236,15 @@
 	<div>
 		<!-- form for creating new room %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     -->
 		<div id = "createRoomForm" style = "visibility: hidden"> 
-			Create a chat room:
+			<h1> Create a chat room: </h1>
 			Enter chatroom name: <input type = "text" class = "chatName" id = "roomName"/>
 			<button type = "submit" value = "addChat" id = "addChat" onclick = "addChat();"> Create Chat Room</button>
 			<button type = "submit" value = "addProtectedChat" id = "addProtectedChat" onclick = "addProtectedChat();"> Create Protected Chat Room</button>
 		</div>
 		
+		
 		<!-- table for existing chatrooms %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   -->
+		<br>
 		<table id = "allChats" class = "chatTable" style = "visibility: visible">
 			<tr>
 				<th class = "chatTableHeader"> All Chat Rooms</th>
@@ -255,9 +257,9 @@
 			<table id = "chatMessages" style = "visibility: visible"></table>
 			<form class = "enterMessage">
 				Enter Message: <input type='text' id="custom" class = "custom"/> <!--https://bgrins.github.io/spectrum/-->
-				<textarea id="message" class = "message" cols="30" rows="5"></textarea>
+				<textarea id="message" class = "message" onkeypress = "if (event.keyCode==13) sendMessage();" cols="30" rows="5"></textarea>
 			</form> 
-			<button type = "submit" value = "send" id = "send" onclick = "sendMessage();"> Send </button>
+			<button type = "submit" value = "send" id = "send1" onclick = "sendMessage();"> Send </button>
 		</div>
 
 		<!-- form for private chat dialogue %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          -->
@@ -265,9 +267,9 @@
 			<div id = "prvMsgChatlog"></div>
 			<table id = "prvChatMessages" style = "visibility: visible"></table>
 			<form class = "enterMessage">
-				Enter Message: <textarea id="prvMessage" class = "prvMmessage" cols="30" rows="5"></textarea>
+				Enter Message: <textarea id="prvMessage" class = "prvMmessage" onkeypress= "if (event.keyCode==13) sendPrvMessage();" cols="30" rows="5"></textarea>
 			</form> 
-			<button type = "submit" value = "send" id = "send" onclick = "sendPrvMessage();"> Send </button>
+			<button type = "submit" value = "send" id = "send2" onclick = "sendPrvMessage();"> Send </button>
 		</div>
 
 		<!-- form for selecting what to do with selected user %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       -->
