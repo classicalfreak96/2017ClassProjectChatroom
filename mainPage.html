@@ -112,12 +112,17 @@
 					$("#divdeps").dialog('open');
 					$("#custom").spectrum({ //https://bgrins.github.io/spectrum/
 					color: "#000000",
-					change: function(color){
+					change: function(color){ //when a new font color is selected
 						//get color sent to serverMessage
 						alert(color.toHexString());
 						document.getElementById("chatMessages").style.color = color.toHexString();
-					}
-			});
+						}
+					});
+					$("#message").keyup(function(event) {
+						if (event.keyCode === 13) {
+						$("#message").click();
+							}
+					});
 				}, false);
 				node.appendChild(node2);
 				document.getElementById("allChats").appendChild(node);
@@ -228,28 +233,28 @@
 	<div>
 		<!-- form for creating new room %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     -->
 		<div id = "createRoomForm" style = "visibility: hidden"> 
-			Create a chat room:
-			Enter chatroom name: <input type = "text" class = "chatName" id = "roomName"/>
+			<h1> Create a Chat Room </h1>
+			<p>Enter chatroom name: <input type = "text" class = "chatName" id = "roomName"/></p>
 			<button type = "submit" value = "addChat" id = "addChat" onclick = "addChat();"> Create Chat Room</button>
 			<button type = "submit" value = "addProtectedChat" id = "addProtectedChat" onclick = "addProtectedChat();"> Create Protected Chat Room</button>
 		</div>
 		
 		<!-- table for existing chatrooms %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   -->
+		<br>
 		<table id = "allChats" class = "chatTable" style = "visibility: visible">
 			<tr>
 				<th class = "chatTableHeader"> All Chat Rooms</th>
 			</tr>
 		</table>
-
 		<!-- form for chat dialogue %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          -->
 		<div id="divdeps" style= "display:none" title = "Conversation Title" class = "divdeps">
 			<div id = "chatlog"></div>
 			<table id = "chatMessages" style = "visibility: visible"></table>
 			<form class = "enterMessage">
 				Enter Message: <input type='text' id="custom" class = "custom"/> <!--https://bgrins.github.io/spectrum/-->
-				<textarea id="message" class = "message" cols="30" rows="5"></textarea>
+				<textarea id="message" class = "message" cols="30" rows="5" onkeypress = "if (event.keyCode == 13) sendMessage();"></textarea>
 			</form> 
-			<button type = "submit" value = "send" id = "send" onclick = "sendMessage();"> Send </button>
+			<button type = "submit" value = "send" id = "send1" onclick = "sendMessage();"> Send </button>
 		</div>
 
 		<!-- form for private chat dialogue %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          -->
@@ -257,9 +262,9 @@
 			<div id = "prvMsgChatlog"></div>
 			<table id = "prvChatMessages" style = "visibility: visible"></table>
 			<form class = "enterMessage">
-				Enter Message: <textarea id="prvMessage" class = "prvMmessage" cols="30" rows="5"></textarea>
+				Enter Message: <textarea id="prvMessage" class = "prvMmessage" cols="30" rows="5" onkeypress = "if (event.keyCode == 13) sendMessage();"></textarea>
 			</form> 
-			<button type = "submit" value = "send" id = "send" onclick = "sendPrvMessage();"> Send </button>
+			<button type = "submit" value = "send" id = "send2" onclick = "sendPrvMessage();"> Send </button>
 		</div>
 
 		<!-- form for selecting what to do with selected user %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       -->
