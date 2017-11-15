@@ -8,41 +8,37 @@
 	<script src="http://code.jquery.com/ui/1.11.1/jquery-ui.min.js"></script>
 	<script type = "text/javascript" src="http://bgrins.github.com/spectrum/spectrum.js"></script>
 	<script>
-		var socketio = io.connect(); //connects to socket 
+		var socketio = io.connect(); 												//connects to socket 
 		var tempMessage = "";
 		var colorVar = "";
 		var tempColor = "";
-		socketio.on('connect', function(){ //when it connects, ask for username
-			// call the server-side function 'adduser' and send one parameter (value of prompt)
-			console.log("connected");
-			socketio.emit('adduser', prompt("What's your username?"));
-			document.getElementById("createRoomForm").style.visibility = "visible"; 
+		socketio.on('connect', function(){ 											//when it connects, ask for username
+			socketio.emit('adduser', prompt("What's your username?"));				//sent value username over to server
+			document.getElementById("createRoomForm").style.visibility = "visible"; //make chatrooms visible once login has occurred
 		});
-		socketio.on('reprompt', function(message){ //asks for username again 
+		socketio.on('reprompt', function(message){ 									//asks for username again 
 			console.log("reprompt triggered"); 
 			socketio.emit('adduser', prompt(message + " please re-enter username"));
 		});
-		socketio.on('usageMessage', function(message){ //alert message
+		socketio.on('usageMessage', function(message){ 								//alert message that has been passed in from server
 			alert(message);
 		});
 
 
 		//message handlers------------------------------------------------------------------------------------------------------------
-		socketio.on("message_to_client",function(username, data) {
-			tempMessage = username + ": " + data["message"];
+		socketio.on("message_to_client",function(username, data) {				//on message to client
+			tempMessage = username + ": " + data["message"];					//store messsage in tempMessage and color in tempColor on user side
 			tempColor = data["color"];
-			socketio.emit('roomCreator', username);
+			socketio.emit('roomCreator', username);								//emits to server to check if client is creator of chatroom
 		});
-		socketio.on("roomCreatorRes", function(creator, username) {
-			var node = document.createElement("tr");
-			var node2 = document.createElement("td");
+
+		socketio.on("roomCreatorRes", function(creator, username) {				//recieves if client is creator of chatroom and user who sent the message
+			var node = document.createElement("tr");							//create new table element to insert into table for chatroom
+			var node2 = document.createElement("td");		
 			node2.setAttribute("class", "color");
-			console.log("tempColor is: " + tempColor); 
-			node2.setAttribute("style", "color:" +  tempColor);
-			//document.getElementById("chatMessages").style.color = tempColor;
-			node2.textContent = tempMessage;
-			console.log("userDialogue inserted");
-			node2.addEventListener("dblclick", function(){
+			node2.setAttribute("style", "color:" +  tempColor);					//set color of text
+			node2.textContent = tempMessage;									//set text in textnode
+			node2.addEventListener("dblclick", function(){						//add event listener that opens dialogue box regarding user action when node is double clicked
 				console.log("double clicked");
 				$("#userDialogue").dialog({
 					autoOpen: false,
@@ -55,29 +51,28 @@
 					title: "action on " + username,
 					modal: false
 				});
-				$("#userDialogue").data("username", username);
+				$("#userDialogue").data("username", username);					//store variables of dialoguebox 
 				$("#userDialogue").dialog('open');
 			}, false);
-			if (creator) {
-				document.getElementById("kickUser").style.visibility = "visible";
+			if (creator) {															//if the client is the creator of the chatroom
+				document.getElementById("kickUser").style.visibility = "visible";	//enable kick or ban user privileges
 			}
 			else {
-				document.getElementById("kickUser").style.visibility = "hidden";
+				document.getElementById("kickUser").style.visibility = "hidden";	//else hide them
 			}
-			node.appendChild(node2);
+			node.appendChild(node2);											//add nodes to chat messages
 			document.getElementById("chatMessages").appendChild(node);
 		});
-		socketio.on('serverMessage', function(chatName, message){
-			console.log("server message");
-			var node = document.createElement("tr");
+		socketio.on('serverMessage', function(chatName, message){				//when the server emits a message, eg X has left the room
+			var node = document.createElement("tr");							//append the message to the chatlog
 			var node2 = document.createElement("td");
 			node.setAttribute("id", chatName);
 			node2.textContent = message;
 			node.appendChild(node2);
 			document.getElementById("chatMessages").appendChild(node);
 		});
-		socketio.on("prv_message_to_client",function(username, data) {
-			var node = document.createElement("tr");
+		socketio.on("prv_message_to_client",function(username, data) {			//when user recieves a private chat message from server
+			var node = document.createElement("tr");							//append the message to the private chat chat log
 			var node2 = document.createElement("td");
 			node2.textContent = username + ": " + data["message"];
 			node.appendChild(node2);
@@ -87,25 +82,25 @@
 
 
 		//chatroom handlers--------------------------------------------------------------------------------------------------------------
-		socketio.on('updateRooms', function(chatrooms){
-			while (document.getElementById("allChats").childNodes.length > 2){
+		socketio.on('updateRooms', function(chatrooms){																	//when update room is called from server
+			while (document.getElementById("allChats").childNodes.length > 2){											//remove all existing rooms from page except for title
 				document.getElementById("allChats").removeChild(document.getElementById("allChats").lastChild);
 			}
-			Object.keys(chatrooms).forEach(function(room){
-				var chatName = String(room);
-				var node = document.createElement("tr"); //puts all chatnames in a table
+			Object.keys(chatrooms).forEach(function(room){										//for each room in the object chatroom
+				var chatName = String(room);													//store name of room in variable chatName
+				var node = document.createElement("tr"); 										//puts all chatnames in a table
 				var node2 = document.createElement("td");
 				node.setAttribute("id", chatName);
-				node2.textContent = chatName + ", created by " + chatrooms[chatName].creator; //cell has chat name and the creator of chat
-				if (chatrooms[chatName].password) { // if there is a password
+				node2.textContent = chatName + ", created by " + chatrooms[chatName].creator; 	//text in cell has chat name and the creator of chat
+				if (chatrooms[chatName].password) { 											// if there is a password, add "protected" at the end of the chat name
 					node2.textContent += " (protected)"; 
 				}
-				node.addEventListener("dblclick", function(){ 
+				node.addEventListener("dblclick", function(){ 																		//add event lisener that opens chatroom message log dialogue box when double clicked
 					socketio.emit('switchRoom', chatName);
-					while (document.getElementById("chatMessages").childNodes.length > 0){
+					while (document.getElementById("chatMessages").childNodes.length > 0){											//delete all existing nodes (eg message from other rooms)
 						document.getElementById("chatMessages").removeChild(document.getElementById("chatMessages").lastChild);
 					}
-					repopulateChat(room);
+					repopulateChat(room);								//call function to repopulate chat with messages from existing room
 					$("#divdeps").dialog({
 						autoOpen: false,
 						show: false,
@@ -118,35 +113,35 @@
 						modal: false
 					});
 					$("#divdeps").dialog('open');
-					$("#custom").spectrum({ //https://bgrins.github.io/spectrum/
+					$("#custom").spectrum({ 							//source: https://bgrins.github.io/spectrum/ user can choose what color they want their text to be
 						color: "#000000",
 						change: function(color){
-						colorVar = String(color.toHexString());
+						colorVar = String(color.toHexString());			//stores chosen color in client side global color variable
 					}
 				});
 				}, false);
 				node.appendChild(node2);
-				document.getElementById("allChats").appendChild(node);
+				document.getElementById("allChats").appendChild(node);	//place the room at the end of the table 
 			});
 		});
-		socketio.on('repopulateChat', function(chatrooms, room){
-			for (var i = 0; i < chatrooms[room].messageLog.length; i++) {
-				var node = document.createElement("tr");
+		socketio.on('repopulateChat', function(chatrooms, room){				//repopulates chat with message log of current room
+			for (var i = 0; i < chatrooms[room].messageLog.length; i++) {		//for each message in the message log of current room
+				var node = document.createElement("tr");						//create table element to append to messages
 				var node2 = document.createElement("td");
 				node2.setAttribute("class", "color");
-				node2.setAttribute("style", "color:" + chatrooms[room].messageLog[i].color);
-				node2.textContent = chatrooms[room].messageLog[i].username + ": " + chatrooms[room].messageLog[i].message;
+				node2.setAttribute("style", "color:" + chatrooms[room].messageLog[i].color);								//set color of message
+				node2.textContent = chatrooms[room].messageLog[i].username + ": " + chatrooms[room].messageLog[i].message;	//set username and text of message
 				node.appendChild(node2);
-				document.getElementById("chatMessages").appendChild(node);
+				document.getElementById("chatMessages").appendChild(node);		//add node
 			};
-			var node3 = document.createElement("tr");
+			var node3 = document.createElement("tr");					//add a message that says "END OF CHAT HISTORY" at the end of repopulation
 			var node4 = document.createElement("td");
 			node4.textContent = "-----END OF CHAT HISTORY-----";
 			node3.appendChild(node4);
 			document.getElementById("chatMessages").appendChild(node3);
 		})
-		socketio.on("joinPrvChat",function(username, otherUser) {
-			$("#prvMsgChat").dialog({
+		socketio.on("joinPrvChat",function(username, otherUser) {		//when recieving join private chat from the server
+			$("#prvMsgChat").dialog({									//create dialogue box and open it for a conversation with client that initiated private chat
 				autoOpen: false,
 				show: false,
 				resizable: true,
@@ -158,64 +153,64 @@
 				modal: false
 			});
 			$("#prvMsgChat").dialog('open');
-			socketio.emit('prvMsgConfirm', otherUser);
+			socketio.emit('prvMsgConfirm', otherUser);					//send a message confirming that user has connected 
 		});
 
 
 
 		//password handers----------------------------------------------------------------------------------------------------------------
-		socketio.on("passwordVerify",function(chatName) {
+		socketio.on("passwordVerify",function(chatName) {								//send password to server when prompted for it
 			socketio.emit('verifiedPassword', prompt("Enter Password: "), chatName);
 		});
 
 
 
 		//user action handlers-------------------------------------------------------------------------------------------------------------
-		socketio.on("confirmKickUser", function() {
-			console.log("user kicked");
+		socketio.on("confirmKickUser", function() {		//close dialogue when user is kicked or banned, and emit message to server				
 			$("#divdeps").dialog('close');
 			socketio.emit('kickUserServer');
 		});
 		socketio.on("confirmBanUser", function() {
-			console.log("user banned");
 			$("#divdeps").dialog('close');
 			socketio.emit('banUserServer');
 		});
-		socketio.on("closeDialogue", function() {
+		socketio.on("closeDialogue", function() {		//function to close dialogue boxes
 			$("#divdeps").dialog('close');
 		});
 
 		//functions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 		//message handlers------------------------------------------------------------------------------------------------------------------
-		function sendMessage(){
-			var msg = document.getElementById("message").value;
-			console.log("color is " + colorVar);
-			socketio.emit("message_to_server", {message:msg, color: colorVar});
-			document.getElementById("message").value = '';
+		function sendMessage(){																	//send message function
+			var msg = document.getElementById("message").value;									//grabs value of message from html element
+			socketio.emit("message_to_server", {message:msg, color: colorVar});					//emit the text and color of message to server
+			document.getElementById("message").value = '';										//clear the html element
 		}
 
-		function sendPrvMessage() {
+		function sendPrvMessage() {																//send private message, same as above. no color for private messages
 			var msg = document.getElementById("prvMessage").value;
 			socketio.emit("prv_message_to_server", {message:msg});
 			document.getElementById("prvMessage").value = '';
 		}
 
 		//room handers----------------------------------------------------------------------------------------------------------------------
-		function addChat(){
-			var chatName = document.getElementById("roomName").value;
-			document.getElementById("roomName").value = "";
-			socketio.emit('addChatroom', chatName);
+		function addChat(){																		//add chat function 
+			var chatName = document.getElementById("roomName").value;							//grabs name of chatroom from html element
+			document.getElementById("roomName").value = "";										//clear html element
+			socketio.emit('addChatroom', chatName);												//emit name of new chatroom to server
 		}
 
-		function addProtectedChat(){
+		function addProtectedChat(){															//same as above, except also prompts for password for protected chat
 			var chatName = document.getElementById("roomName").value;
 			document.getElementById("roomName").value = "";
-			socketio.emit('addProtectedChatroom', prompt("Enter Password: "), chatName);
+			socketio.emit('addProtectedChatroom', prompt("Enter Password: "), chatName);		//emit name of new chatrom and password to server
 		}
 
-		function prvMsg(username) {
-			socketio.emit("prvMsg", username);
-			$("#prvMsgChat").dialog({
+		function prvMsg(username) {																//send private message to user
+			socketio.emit("prvMsg", username);													//send to server initiating private message chat and user the client wishes to chat privately with 
+			while (document.getElementById("prvChatMessages").childNodes.length > 0){			//delete all existing nodes (eg message from other rooms)
+						document.getElementById("prvChatMessages").removeChild(document.getElementById("prvChatMessages").lastChild);
+			}
+			$("#prvMsgChat").dialog({								//create and open dialogue box
 				autoOpen: false,
 				show: false,
 				resizable: true,
@@ -230,22 +225,22 @@
 			$("#prvMsgChat").dialog('open');
 		}
 
-		function repopulateChat(room) {
-			socketio.emit("pullRecentData", room);
+		function repopulateChat(room) {								//function to repopulate chatroom
+			socketio.emit("pullRecentData", room);					//emits pull recent data from server of a particular room
 		}
 
 		//user action handlers--------------------------------------------------------------------------------------------------------------
-		function kickUser(username) {
-			socketio.emit("kickUser", username);
-			$("#userDialogue").dialog('close');
+		function kickUser(username) {								//function to kick username from room
+			socketio.emit("kickUser", username);					//emits a message to kick user from room
+			$("#userDialogue").dialog('close');						//closes chat dialogue of user to ban
 		}
-		function banUser(username) {
+		function banUser(username) {								//same as above except ban user
 			socketio.emit("banUser", username);
 			$("#userDialogue").dialog('close');
 		}
-		function logOut(){
-			socketio.emit("logOut");
-			document.getElementById("createRoomForm").style.visibility = "hidden"; 
+		function logOut(){																//logs out the user
+			socketio.emit("logOut");													//sends logout message to server
+			document.getElementById("createRoomForm").style.visibility = "hidden"; 		//hides form so individual is not able to view chatrooms
 			alert("You have been logged out");
 		}
 	</script>
@@ -256,7 +251,6 @@
 
 <!-- html code for webpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     -->
 <body> 
-	<!-- 	returning user login -->
 	<div>
 		<!-- form for creating new room %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     -->
 		<div id = "createRoomForm" style = "visibility: hidden"> 
