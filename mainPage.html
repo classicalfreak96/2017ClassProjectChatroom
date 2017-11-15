@@ -10,9 +10,11 @@
 	<script>
 		var socketio = io.connect(); //connects to socket 
 		var tempMessage = "";
-		var color2;
+		var colorVar = "";
+		var tempColor = "";
 		socketio.on('connect', function(){ //when it connects, ask for username
 			// call the server-side function 'adduser' and send one parameter (value of prompt)
+			console.log("connected");
 			socketio.emit('adduser', prompt("What's your username?"));
 			document.getElementById("createRoomForm").style.visibility = "visible"; 
 		});
@@ -28,12 +30,16 @@
 		//message handlers------------------------------------------------------------------------------------------------------------
 		socketio.on("message_to_client",function(username, data) {
 			tempMessage = username + ": " + data["message"];
+			tempColor = data["color"];
 			socketio.emit('roomCreator', username);
 		});
 		socketio.on("roomCreatorRes", function(creator, username) {
 			var node = document.createElement("tr");
 			var node2 = document.createElement("td");
 			node2.setAttribute("class", "color");
+			console.log("tempColor is: " + tempColor);
+			node2.setAttribute("style", "color:" +  tempColor);
+			//document.getElementById("chatMessages").style.color = tempColor;
 			node2.textContent = tempMessage;
 			console.log("userDialogue inserted");
 			node2.addEventListener("dblclick", function(){
@@ -111,13 +117,14 @@
 					});
 					$("#divdeps").dialog('open');
 					$("#custom").spectrum({ //https://bgrins.github.io/spectrum/
-					color: "#000000",
-					change: function(color){
+						color: "#000000",
+						change: function(color){
 						//get color sent to serverMessage
 						alert(color.toHexString());
-						document.getElementById("chatMessages").style.color = color.toHexString();
+						colorVar = String(color.toHexString());
+						//document.getElementById("chatMessages").style.color = color.toHexString();
 					}
-			});
+				});
 				}, false);
 				node.appendChild(node2);
 				document.getElementById("allChats").appendChild(node);
@@ -167,7 +174,8 @@
 		//message handlers------------------------------------------------------------------------------------------------------------------
 		function sendMessage(){
 			var msg = document.getElementById("message").value;
-			socketio.emit("message_to_server", {message:msg});
+			console.log("color is " + colorVar);
+			socketio.emit("message_to_server", {message:msg, color: colorVar});
 			document.getElementById("message").value = '';
 		}
 

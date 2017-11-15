@@ -63,7 +63,8 @@ io.sockets.on("connection", function(socket){
 
 	//message handlers---------------------------------------------------------------------------------------
 	socket.on('message_to_server', function(data) {
-		io.sockets.in(socket.room).emit("message_to_client", socket.username, {message:data["message"] }) // broadcast the message to other users
+		console.log("color is" + data["color"]);
+		io.sockets.in(socket.room).emit("message_to_client", socket.username, {message:data["message"], color:data["color"]}) // broadcast the message to other users
 	});
 	socket.on('roomCreator', function(username) {
 		console.log("user: " + socket.username + "|| room: " + socket.room + "|| creator: " + chatrooms[socket.room].creator)
