@@ -11,4 +11,5 @@ We also did a lot on user interactions. For example, a user can press enter to s
 
 Tips:
 Join chatroom: double click chatroom name
-Ban/kick user (admin of chatroom): double click user name in chatroom 
+Ban/kick user (admin of chatroom): double click user name on user message, past history log in chatroom 
+Private message to user (anybody): double click user name on user message, past history log in chatroom
