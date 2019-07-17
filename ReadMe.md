@@ -1,5 +1,6 @@
-URL:
-http://ec2-13-58-179-213.us-east-2.compute.amazonaws.com:3456
+# Chatroom
+
+The following is a class project for a web-development class in which we created a chatroom in which users can sign in to chat with other users. In this project, we implemented node.js. Following is a description of the class project. The "Creative Portion" is a portion of points that are dedicated to the level of difficulty with which we implemented features that were not required by the rubric. 
 
 Creative Portion:
 Users can choose the color of the message they would like to send using a color spectrum. Instead of making it so that the entire conversation's messages are the color they chose and only they can see it, we made it so that only that message is the chosen color and all other people in the conversation can also see the message in that color. 
@@ -13,3 +14,5 @@ Tips:
 Join chatroom: double click chatroom name
 Ban/kick user (admin of chatroom): double click user name on user message, past history log in chatroom 
 Private message to user (anybody): double click user name on user message, past history log in chatroom
+
+*Unfortunately, due to the age of this class project, the code is no longer being hosted on an amazon server.*
